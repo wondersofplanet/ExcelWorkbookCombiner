@@ -1,0 +1,62 @@
+Sub CombineWorkbooks()
+
+    ' Declare variables
+    Dim wb As Workbook
+    Dim ws As Object ' Use Object to handle both worksheets and chart sheets
+    Dim path As String
+    Dim currentFileName As String
+    Dim combinedWB As Workbook
+    Dim combinedSheet As Worksheet
+
+    ' Get the path of the current workbook
+    path = ThisWorkbook.Path & "\"
+
+    ' Get the name of the current workbook
+    currentFileName = ThisWorkbook.Name
+
+    ' Delete Combined.xlsx if it exists
+    On Error Resume Next
+    Kill path & "Combined.xlsx"
+    On Error GoTo 0
+
+    ' Create a new workbook for combined sheets
+    Set combinedWB = Workbooks.Add
+
+    ' Loop through all Excel files in the folder
+    Dim fileName As String
+    fileName = Dir(path & "*.xlsx")
+    
+    Do While fileName <> ""
+        ' Open each workbook
+        If fileName <> currentFileName Then ' Exclude the current file
+            Set wb = Workbooks.Open(Filename:=path & fileName)
+
+            ' Loop through all sheets (both worksheets and chart sheets) in the workbook
+            For Each ws In wb.Sheets
+                ' Copy the sheet to the combined workbook
+                If combinedWB.Sheets.Count > 0 Then
+                    ws.Copy after:=combinedWB.Sheets(combinedWB.Sheets.Count)
+                Else
+                    ws.Copy after:=combinedWB.Sheets(1)
+                End If
+                ' Rename the copied sheet
+                combinedWB.Sheets(combinedWB.Sheets.Count).Name = Left(wb.Name, Len(wb.Name) - 5) & "_" & ws.Name ' Remove ".xlsx" from filename
+            Next ws
+
+            ' Close the workbook without saving changes
+            wb.Close SaveChanges:=False
+        End If
+
+        ' Get the next file name
+        fileName = Dir
+    Loop
+
+    ' Delete Sheet1 if it exists
+    On Error Resume Next
+    combinedWB.Sheets("Sheet1").Delete
+    On Error GoTo 0
+
+    ' Save the combined workbook
+    combinedWB.SaveAs Filename:=path & "Combined.xlsx"
+
+End Sub
